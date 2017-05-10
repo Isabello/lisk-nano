@@ -14,10 +14,9 @@ pipeline {
 										env
 										cd /var/lib/jenkins/workspace/
 										pkill -f app.js || true
-										rm -rf lisk
-										git clone https://github.com/LiskHQ/lisk.git
 										cd lisk
 										git checkout development
+										git pull
 										dropdb lisk_test || true
 										createdb lisk_test
 										psql -d lisk_test -c "alter user "$USER" with password 'password';"
