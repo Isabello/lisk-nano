@@ -11,6 +11,7 @@ pipeline {
 						node('master-nano-01'){
 						lock(resource: "master-nano-01", inversePrecedence: true) {
 							sh '''#!/bin/bash
+										env
 										cd /var/lib/jenkins/workspace/
 										pkill -f app.js || true
 										rm -rf lisk
@@ -103,7 +104,8 @@ pipeline {
 				   node('master-nano-01'){
 					 sh '''#!/bin/bash
 								 pkill -f app.js -9
-								 pkill -f webpack-dev-server -9
+								 # Commented until e2e is ready
+								 # pkill -f webpack-dev-server -9
 							'''
 					 }
 				 })
