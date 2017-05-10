@@ -44,13 +44,8 @@ pipeline {
 										pkill -f selenium -9 || true
 										pkill -f Xvfb -9 || true
 										rm -rf /tmp/.X0-lock || true
-										cd /var/lib/jenkins/workspace/
-										rm -rf lisk-nano
-										git clone https://github.com/LiskHQ/lisk-nano.git
-										cd lisk-nano
-										git checkout $BRANCH_NAME
 										npm install
-										cd src
+										cd $WORKSPACE/src
 										npm install
 								 '''
 							}
@@ -64,7 +59,7 @@ pipeline {
 				lock(resource: "master-nano-01", inversePrecedence: true) {
 					sh '''#!/bin/bash
 								if [ -z ${ghprbPullId+x} ]; then echo "Not a PR build"; else export CI_PULL_REQUEST=$ghprbPullId; fi
-								cd /var/lib/jenkins/workspace/lisk-nano/src
+								cd $WORKSPACE/src
 								cp ~/.coveralls.yml-nano .coveralls.yml
 								npm run build
 								npm run dev &> .lisk-nano.log &
@@ -88,7 +83,7 @@ pipeline {
 			  "Output Logs from Testing" : {
 				  node('master-nano-01'){
 				  sh '''#!/bin/bash
-								cd /var/lib/jenkins/workspace/lisk-nano/src
+								cd $WORKSPACE/src
 								# Commented until e2e is ready
 								# cat .protractor.log
 								cat .lisk-nano.log
