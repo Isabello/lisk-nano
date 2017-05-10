@@ -2,7 +2,7 @@ pipeline {
 	agent { label 'master-nano-01' }
 	environment {
 		ON_JENKINS = 'TRUE'
-		NANO_WORKSPACE = '/var/lib/jenkins/workspace/lisk-nano'
+		WORKSPACE = '/var/lib/jenkins/workspace/lisk-nano'
 	}
 	stages {
 	  stage ('Lisk Provisioning') {
