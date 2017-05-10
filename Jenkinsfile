@@ -52,14 +52,11 @@ pipeline {
 									# Prepare lisk core for testing
 									bash ~/tx.sh
 
-									# Run nano tests
-									npm run test
-
-									# Pause between test and build
-									sleep 20
-
-									# Run build
+									# Run nano build
 									npm run build
+
+									# Run test
+									npm run test
 
 									# Commented until e2e is ready
 									# export CHROME_BIN=chromium-browser
