@@ -2,7 +2,7 @@ pipeline {
 	agent { label 'master-nano-01' }
 	environment {
 		ON_JENKINS = 'TRUE'
-		WORKSPACE = '/var/lib/jenkins/workspace/lisk-nano'
+		NANO_WORKSPACE = '/var/lib/jenkins/workspace/lisk-nano'
 	}
 	stages {
 	  stage ('Lisk Provisioning') {
@@ -45,7 +45,6 @@ pipeline {
 										pkill -f selenium -9 || true
 										pkill -f Xvfb -9 || true
 										rm -rf /tmp/.X0-lock || true
-										npm install
 										cd $WORKSPACE/src
 										npm install
 								 '''
