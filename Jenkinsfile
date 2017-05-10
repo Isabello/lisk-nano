@@ -6,15 +6,20 @@ pipeline {
 	stages {
 	  stage ('Lisk Provisioning') {
 			steps {
-				parallel(
-					"Build Components for Nano" : {
+					"Build and Run Nano Tests" : {
 						node('master-nano-01'){
 						lock(resource: "master-nano-01", inversePrecedence: true) {
 							sh '''#!/bin/bash
 										env
-										cd /var/lib/jenkins/workspace/
+
+										# Clean up old processes
+										pkill -f selenium -9 || true
+										pkill -f Xvfb -9 || true
+										rm -rf /tmp/.X0-lock || true
 										pkill -f app.js || true
-										cd lisk
+
+										# Start lisk and make sure its current
+										cd /var/lib/jenkins/workspace/lisk
 										git checkout development
 										git pull
 										dropdb lisk_test || true
@@ -34,80 +39,44 @@ pipeline {
 										cp test/config.json test/genesisBlock.json .
 										export NODE_ENV=test
 										BUILD_ID=dontKillMe ~/start_lisk.sh
-								 '''
-							 }
-						}
-						node('master-nano-01'){
-						lock(resource: "master-nano-01", inversePrecedence: true) {
-							sh '''#!/bin/bash
-										env
-										pkill -f selenium -9 || true
-										pkill -f Xvfb -9 || true
-										rm -rf /tmp/.X0-lock || true
+
+										# Build nano
 										cd $WORKSPACE/src
 										npm install
+
+										if [ -z ${ghprbPullId+x} ]; then echo "Not a PR build"; else export CI_PULL_REQUEST=$ghprbPullId; fi
+										cd $WORKSPACE/src
+										cp ~/.coveralls.yml-nano .coveralls.yml
+										npm run build
+
+										# Start nano in development environment
+										npm run dev &> .lisk-nano.log &
+
+										# Prepare lisk core for testing
+										bash ~/tx.sh
+
+										# Run nano tests
+										npm run test
+
+										# Commented until e2e is ready
+										# export CHROME_BIN=chromium-browser
+										# export DISPLAY=:0.0
+										# Xvfb :0 -ac -screen 0 1280x1024x24 &
+										# ./node_modules/protractor/bin/webdriver-manager update
+										# npm run e2e-test
+
+										# Commented until e2e is ready
+										# cat .protractor.log
+										cat .lisk-nano.log
+
+										pkill -f app.js -9 || true
+										# Commented until e2e is ready
+										# pkill -f webpack-dev-server -9
 								 '''
 								 milestone 1
 							}
 						}
-					})
-				}
-		}
-		stage ('Run Tests') {
-			steps {
-				node('master-nano-01'){
-				lock(resource: "master-nano-01", inversePrecedence: true) {
-					sh '''#!/bin/bash
-								env
-								if [ -z ${ghprbPullId+x} ]; then echo "Not a PR build"; else export CI_PULL_REQUEST=$ghprbPullId; fi
-								cd $WORKSPACE/src
-								cp ~/.coveralls.yml-nano .coveralls.yml
-								npm run build
-								npm run dev &> .lisk-nano.log &
-								bash ~/tx.sh
-								npm run test
-
-								# Commented until e2e is ready
-								# export CHROME_BIN=chromium-browser
-								# export DISPLAY=:0.0
-								# Xvfb :0 -ac -screen 0 1280x1024x24 &
-								# ./node_modules/protractor/bin/webdriver-manager update
-								# npm run e2e-test
-						 '''
-						 milestone 2
-					 }
-				 }
-			}
-		}
-		stage ('Output logging') {
-			steps {
-			parallel(
-			  "Output Logs from Testing" : {
-				  node('master-nano-01'){
-				  sh '''#!/bin/bash
-								cd $WORKSPACE/src
-								# Commented until e2e is ready
-								# cat .protractor.log
-								cat .lisk-nano.log
-					   '''
-						 milestone 3
 					}
-				})
-			}
-		}
-		stage ('Node Cleanup') {
-			 steps {
-			 parallel(
-				 "Cleanup Lisk-Core for Nano" : {
-				   node('master-nano-01'){
-					 sh '''#!/bin/bash
-								 pkill -f app.js -9
-								 # Commented until e2e is ready
-								 # pkill -f webpack-dev-server -9
-							'''
-							milestone 4
-					 }
-				 })
 			}
 		}
 	}
