@@ -18,6 +18,8 @@ pipeline {
 									pkill -f app.js || true
 
 									# Start lisk and make sure its current
+									cd /var/lib/jenkins/workspace/
+									git clone git@github.com:LiskHQ/lisk.git
 									cd /var/lib/jenkins/workspace/lisk
 									git checkout development
 									git pull
