@@ -47,6 +47,7 @@ pipeline {
 										cd $WORKSPACE/src
 										npm install
 								 '''
+								 milestone 1
 							}
 						}
 					})
@@ -73,6 +74,7 @@ pipeline {
 								# ./node_modules/protractor/bin/webdriver-manager update
 								# npm run e2e-test
 						 '''
+						 milestone 2
 					 }
 				 }
 			}
@@ -88,6 +90,7 @@ pipeline {
 								# cat .protractor.log
 								cat .lisk-nano.log
 					   '''
+						 milestone 3
 					}
 				})
 			}
@@ -102,6 +105,7 @@ pipeline {
 								 # Commented until e2e is ready
 								 # pkill -f webpack-dev-server -9
 							'''
+							milestone 4
 					 }
 				 })
 			}
