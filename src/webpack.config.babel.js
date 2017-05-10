@@ -1,233 +1,180 @@
+const path = require('path');
 
-import path from 'path'
+const webpack = require('webpack');
+const merge = require('webpack-merge');
+const validate = require('webpack-validator');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-import webpack from 'webpack'
-import merge from 'webpack-merge'
-import validate from 'webpack-validator'
-import HtmlWebpackPlugin from 'html-webpack-plugin'
-import ngAnnotatePlugin from 'ng-annotate-webpack-plugin'
-import CleanWebpackPlugin from 'clean-webpack-plugin'
-
-import pkg from './package'
+const nodeEnvironment = process.env.NODE_ENV;
 
 const PATHS = {
   app: path.join(__dirname, 'app'),
-  build: path.resolve(__dirname, '..', 'app')
-}
+  build: path.resolve(__dirname, '..', 'app'),
+  spec: path.join(__dirname, 'spec'),
+  test: path.join(__dirname, 'test'),
+};
 
 const common = {
-  entry: {
+  devtool: 'source-map',
+  entry: nodeEnvironment === 'test' ? {} : {
     app: PATHS.app,
   },
   output: {
     path: PATHS.build,
-    filename: `app.js`,
+    filename: 'app.js',
   },
   node: {
-    fs: 'empty'
+    fs: 'empty',
   },
   resolve: {
     alias: {
-      jquery: 'jquery/src/jquery'
-    }
-  },
-}
-
-let clean = (path) => {
-  return {
-    plugins: [
-      new CleanWebpackPlugin([path], {
-        root: process.cwd()
-      })
-    ]
-  }
-}
-
-let html = () => {
-  return {
-    plugins: [
-      new HtmlWebpackPlugin({
-        filename: 'index.html',
-        template: 'app/index.jade',
-        minify: {
-          collapseWhitespace: true,
-          minifyCSS: true,
-        }
-      })
-    ]
-  }
-}
-
-let minify = () => {
-  return {
-    plugins: [
-      new ngAnnotatePlugin(),
-      new webpack.optimize.UglifyJsPlugin({
-        compress: {
-          warnings: false,
-        }
-      })
-    ]
-  }
-}
-
-let devServer = () => {
-  return {
-    devServer: {
-      hot: true,
-      inline: true,
-      stats: 'errors-only',
+      jquery: 'jquery/src/jquery',
     },
-    plugins: [
-      new webpack.HotModuleReplacementPlugin({ multiStep: true })
-    ]
-  }
-}
+  },
+};
 
-let babel = () => {
-  return {
-    module: {
-      loaders: [
-        {
-          test: /\.js$/,
-          loader: 'babel',
-          include: PATHS.app,
-        }
-      ]
-    }
-  }
-}
+const clean = pathToClean => ({
+  plugins: [
+    new CleanWebpackPlugin([pathToClean], {
+      root: process.cwd(),
+    }),
+  ],
+});
 
-let jade = () => {
-  return {
-    module: {
-      loaders: [
-        {
-          test: /\.jade$/,
-          loader: 'jade',
-          include: PATHS.app,
-        }
-      ]
-    }
-  }
-}
+const html = () => ({
+  plugins: [
+    new HtmlWebpackPlugin({
+      filename: 'index.html',
+      template: 'app/index.pug',
+      minify: {
+        collapseWhitespace: true,
+        minifyCSS: true,
+      },
+    }),
+  ],
+});
 
-let less = () => {
-  return {
-    module: {
-      loaders: [
-        {
-          test: /\.less$/,
-          loader: 'style!css!less',
-          include: PATHS.app,
-        }
-      ]
-    }
-  }
-}
+const devServer = () => ({
+  devServer: {
+    hot: true,
+    inline: true,
+    stats: 'errors-only',
+  },
+  plugins: [
+    new webpack.HotModuleReplacementPlugin({ multiStep: true }),
+  ],
+});
 
-let css = () => {
-  return {
-    module: {
-      loaders: [
-        {
-          test: /\.css$/,
-          loader: 'style!css',
-        }
-      ]
-    }
-  }
-}
+const babel = () => ({
+  module: {
+    loaders: [
+      {
+        test: /\.js$/,
+        loader: 'babel',
+        include: [PATHS.app, PATHS.spec, PATHS.test],
+      },
+    ],
+  },
+});
 
-let json = () => {
-  return {
-    module: {
-      loaders: [
-        {
-          test: /\.json$/,
-          loader: 'json',
-        }
-      ]
-    }
-  }
-}
+const pug = () => ({
+  module: {
+    loaders: [
+      {
+        test: /\.pug$/,
+        loader: 'pug-loader',
+        include: PATHS.app,
+      },
+    ],
+  },
+});
 
-let png = () => {
-  return {
-    module: {
-      loaders: [
-        {
-          test: /\.png$/,
-          loader: 'url',
-        }
-      ]
-    }
-  }
-}
+const less = () => ({
+  module: {
+    loaders: [
+      {
+        test: /\.less$/,
+        loader: 'style!css!less',
+        include: PATHS.app,
+      },
+    ],
+  },
+});
 
-let fonts = () => {
-  return {
-    module: {
-      loaders: [
-        {
-          test: /\.(eot|svg|ttf|woff|woff2)$/,
-          loader: 'url',
-          include: path.join(PATHS.app, 'assets')
-        }
-      ]
-    }
-  }
-}
+const css = () => ({
+  module: {
+    loaders: [
+      {
+        test: /\.css$/,
+        loader: 'style!css',
+      },
+    ],
+  },
+});
 
-let provide = () => {
-  return {
-    plugins: [
-      new webpack.ProvidePlugin({
-        app: 'exports?exports.default!' + path.join(PATHS.app, 'app'),
-      }),
-    ]
-  }
-}
+const json = () => ({
+  module: {
+    loaders: [
+      {
+        test: /\.json$/,
+        loader: 'json',
+      },
+    ],
+  },
+});
 
-let config
+const png = () => ({
+  module: {
+    loaders: [
+      {
+        test: /\.png$/,
+        loader: 'url',
+      },
+    ],
+  },
+});
 
-switch(process.env.npm_lifecycle_event) {
+const fonts = () => ({
+  module: {
+    loaders: [
+      {
+        test: /\.(eot|svg|ttf|woff|woff2)$/,
+        loader: 'url',
+        include: path.join(PATHS.app, 'assets'),
+      },
+    ],
+  },
+});
+
+const provide = () => ({
+  plugins: [
+    new webpack.ProvidePlugin({
+      app: `exports?exports.default!${path.join(PATHS.app, 'app')}`,
+    }),
+  ],
+});
+
+const bundleAnalyzer = () => ({
+  plugins: [
+    new BundleAnalyzerPlugin({
+      openAnalyzer: false,
+      analyzerMode: 'static',
+    }),
+  ],
+});
+
+let config;
+
+switch (process.env.npm_lifecycle_event) {
   case 'build':
-    config = merge(
-      common,
-
-      clean(path.join(PATHS.build, '*')),
-      minify(),
-
-      html(),
-      provide(),
-      babel(),
-      jade(),
-      less(),
-      css(),
-      json(),
-      png(),
-      fonts()
-    )
-    break
+    config = merge(common, clean(path.join(PATHS.build, '*')), html(), provide(), babel(), pug(), less(), css(), json(), png(), fonts(), bundleAnalyzer());
+    break;
   default:
-    config = merge(
-      common,
-
-      devServer(),
-      { devtool: 'eval-source-map' },
-
-      html(),
-      provide(),
-      babel(),
-      jade(),
-      less(),
-      css(),
-      json(),
-      png(),
-      fonts()
-    )
-    break
+    config = merge(common, devServer(), { devtool: 'eval-source-map' }, html(), provide(), babel(), pug(), less(), css(), json(), png(), fonts());
+    break;
 }
 
-export default validate(config)
+// export default validate(config)
+module.exports = validate(config);

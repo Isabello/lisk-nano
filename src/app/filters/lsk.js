@@ -1,4 +1,1 @@
-
-app.filter('lsk', (lsk) => {
-  return lsk.normalize
-})
+app.filter('lsk', lsk => lsk.normalize);

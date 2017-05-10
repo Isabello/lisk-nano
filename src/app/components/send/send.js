@@ -1,111 +1,86 @@
+import './send.less';
 
-import './send.less'
-
-const ADDRESS_VALID_RE = '^[0-9]{1,21}[L|l]$'
-const AMOUNT_VALID_RE = '^[0-9]+(\.[0-9]{1,8})?$'
+const ADDRESS_VALID_RE = '^[0-9]{1,21}[L|l]$';
+const AMOUNT_VALID_RE = '^[0-9]+(.[0-9]{1,8})?$';
 
 app.component('send', {
-  template: require('./send.jade')(),
+  template: require('./send.pug')(),
   bindings: {
-    account: '<',
-    passphrase: '<',
+    recipientId: '<',
+    transferAmount: '<',
   },
   controller: class send {
-    constructor ($scope, $peers, lsk, success, error, $mdDialog, $q) {
-      this.$scope = $scope
-      this.$peers = $peers
-      this.success = success
-      this.error = error
-      this.$mdDialog = $mdDialog
-      this.$q = $q
+    constructor($scope, $peers, lsk, dialog, $mdDialog, $q, $rootScope, Account) {
+      this.$scope = $scope;
+      this.$peers = $peers;
+      this.dialog = dialog;
+      this.$mdDialog = $mdDialog;
+      this.$q = $q;
+      this.$rootScope = $rootScope;
+      this.account = Account;
 
       this.recipient = {
         regexp: ADDRESS_VALID_RE,
-      }
+        value: $scope.$ctrl.recipientId,
+      };
 
       this.amount = {
         regexp: AMOUNT_VALID_RE,
+      };
+      if ($scope.$ctrl.transferAmount) {
+        this.amount.value = parseInt(lsk.normalize($scope.$ctrl.transferAmount), 10);
       }
 
       this.$scope.$watch('$ctrl.amount.value', () => {
-        this.amount.raw = lsk.from(this.amount.value) || 0
-      })
+        if (lsk.from(this.amount.value) !== this.amount.raw) {
+          this.amount.raw = lsk.from(this.amount.value) || 0;
+        }
+      });
 
       this.$scope.$watch('$ctrl.account.balance', () => {
-        this.amount.max = parseFloat(lsk.normalize(this.account.balance)) - 0.1
-      })
+        this.amount.max = lsk.normalize(this.account.get().balance - 10000000);
+      });
     }
 
-    reset () {
-      this.recipient.value = ''
-      this.amount.value = ''
+    reset() {
+      this.recipient.value = '';
+      this.amount.value = '';
     }
 
-    promptSecondPassphrase () {
-      return this.$q((resolve, reject) => {
-        if (this.account.secondSignature) {
-          this.$mdDialog.show({
-            controllerAs: '$ctrl',
-            template: require('./second.jade')(),
-            controller: /*@ngInject*/ class second {
-              constructor ($scope, $mdDialog) {
-                this.$mdDialog = $mdDialog
-              }
-
-              ok () {
-                this.$mdDialog.hide()
-                resolve(this.value)
-              }
-
-              cancel () {
-                this.$mdDialog.hide()
-                reject()
-              }
-            }
-          })
-        } else {
-          resolve()
-        }
-      })
+    sendLSK() {
+      this.loading = true;
+      this.account.sendLSK(
+        this.recipient.value,
+        this.amount.raw,
+        this.account.get().passphrase,
+        this.secondPassphrase,
+      ).then((data) => {
+        const transaction = {
+          id: data.transactionId,
+          senderPublicKey: this.account.get().publicKey,
+          senderId: this.account.get().address,
+          recipientId: this.recipient.value,
+          amount: this.amount.raw,
+          fee: 10000000,
+        };
+        this.$rootScope.$broadcast('transaction-sent', transaction);
+        return this.dialog.successAlert({ text: `${this.amount.value} sent to ${this.recipient.value}` })
+            .then(() => {
+              this.reset();
+            });
+      }).catch((res) => {
+        this.dialog.errorAlert({ text: res && res.message ? res.message : 'An error occurred while sending the transaction.' });
+      }).finally(() => {
+        this.loading = false;
+      });
     }
 
-    go () {
-      this.loading = true
-
-      this.promptSecondPassphrase()
-        .then((secondPassphrase) => {
-          this.$peers.active.sendTransaction(
-            this.passphrase,
-            secondPassphrase,
-            this.recipient.value,
-            this.amount.raw
-          )
-          .then(
-            (res) => {
-              return this.success.dialog({ text: `${this.amount.value} sent to ${this.recipient.value}` })
-                .then(() => {
-                  this.reset()
-                })
-            },
-            (res) => {
-              this.error.dialog({ text: res && res.message ? res.message : 'An error occurred while sending the transaction.' })
-            }
-          )
-          .finally(() => {
-            this.loading = false
-          })
-        }, () => {
-          this.loading = false
-        })
+    setMaxAmount() {
+      this.amount.value = Math.max(0, this.amount.max);
     }
-  }
-})
 
-app.directive('ignoreMouseWheel', () => {
-  return {
-    restrict: 'A',
-    link: (scope, element, attrs) => {
-      element.bind('mousewheel', event => element.blur())
+    cancel() {
+      this.$mdDialog.cancel();
     }
-  }
-})
+  },
+});

@@ -1,14 +1,11 @@
-
-import './top.less'
+import './top.less';
 
 app.component('top', {
-  template: require('./top.jade')(),
-  bindings: {
-    account: '<',
-  },
+  template: require('./top.pug')(),
   controller: class top {
-    constructor ($peers) {
-      this.$peers = $peers
+    constructor($peers, Account) {
+      this.$peers = $peers;
+      this.account = Account;
     }
-  }
-})
+  },
+});
