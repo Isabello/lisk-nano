@@ -1,5 +1,5 @@
 pipeline {
-	agent { label 'master-nano-01' }
+	agent none
 	environment {
 		ON_JENKINS = 'TRUE'
 	}
@@ -41,6 +41,7 @@ pipeline {
 						node('master-nano-01'){
 						lock(resource: "master-nano-01", inversePrecedence: true) {
 							sh '''#!/bin/bash
+										env
 										pkill -f selenium -9 || true
 										pkill -f Xvfb -9 || true
 										rm -rf /tmp/.X0-lock || true
@@ -57,6 +58,7 @@ pipeline {
 				node('master-nano-01'){
 				lock(resource: "master-nano-01", inversePrecedence: true) {
 					sh '''#!/bin/bash
+								env
 								if [ -z ${ghprbPullId+x} ]; then echo "Not a PR build"; else export CI_PULL_REQUEST=$ghprbPullId; fi
 								cd $WORKSPACE/src
 								cp ~/.coveralls.yml-nano .coveralls.yml
