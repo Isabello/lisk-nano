@@ -16,6 +16,7 @@ pipeline {
 									pkill -f Xvfb -9 || true
 									rm -rf /tmp/.X0-lock || true
 									pkill -f app.js || true
+									pkill -f webpack-dev-server -9 || true
 
 									# Start lisk and make sure its current
 									cd /var/lib/jenkins/workspace/
@@ -45,19 +46,17 @@ pipeline {
 									cd $WORKSPACE/src
 									npm install
 
-									if [ -z ${ghprbPullId+x} ]; then echo "Not a PR build"; else export CI_PULL_REQUEST=$ghprbPullId; fi
-									cd $WORKSPACE/src
+									# Add coveralls config file
 									cp ~/.coveralls.yml-nano .coveralls.yml
-
-									# Start nano in development environment
-									npm run dev &> .lisk-nano.log &
-									sleep 20
 
 									# Prepare lisk core for testing
 									bash ~/tx.sh
 
 									# Run nano tests
 									npm run test
+
+									# Run build
+									npm run build
 
 									# Commented until e2e is ready
 									# export CHROME_BIN=chromium-browser
