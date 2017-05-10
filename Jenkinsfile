@@ -55,6 +55,9 @@ pipeline {
 									# Run nano tests
 									npm run test
 
+									# Pause between test and build
+									sleep 20
+
 									# Run build
 									npm run build
 
